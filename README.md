@@ -10,15 +10,6 @@ It mainly contains:
 * **Homework Datasets:** Datasets used in coursework, assignments, and statistical exercises.
 * **Practice Materials:** Selected examples and experimental analyses for better understanding survival analysis concepts.
 
-## Topics Covered
-
-Some of the topics explored in this repository include:
-
-* Kaplan-Meier Survival Estimation
-* Log-Rank Tests
-* Survival Curve Comparisons
-* Other survival analysis methods as I continue learning
-
 ## Programming Language
 
 The analyses are primarily conducted using **R**.
@@ -27,4 +18,4 @@ The analyses are primarily conducted using **R**.
 
 This repository is intended for **personal learning, practice, and educational purposes**. The code may be updated or refined as my understanding of survival analysis develops.
 
-Datasets are shared for educational purposes where redistribution is permitted.
+
