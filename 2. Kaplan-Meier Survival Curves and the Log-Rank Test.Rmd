@@ -1,0 +1,277 @@
+---
+title: "2. Kaplan-Meier Survival Curves and the Log-Rank Test"
+author: "Xukun Zhu"
+date: "2026-10-13"
+output: html_document
+---
+#2.1 Data preparation
+```{r}
+library(survival)
+
+vets <- read.table("data/vets.dat",
+                   header = FALSE)
+
+names(vets) <- c("id", "st", "perf", "dd",
+                 "age", "pth", "d")
+
+# Extract cell type from id
+vets$cell_code <- vets$id %% 10000
+
+# Part (a): Binary variable
+# 1 = Large, 0 = Other
+vets$celltype1 <- ifelse(vets$cell_code == 1000, 1, 0)
+
+# Part (b): Four-category variable
+vets$celltype4 <- factor(
+  vets$cell_code,
+  levels = c(1000, 100, 10, 1),
+  labels = c("Large", "Adeno", "Small", "Squamous")
+)
+
+```
+
+#2.1.a
+```{r}
+# Kaplan-Meier estimates
+km_a <- survfit(Surv(st, d) ~ celltype1, data = vets)
+
+# KM plot
+plot(km_a,
+     col = c("blue", "red"),
+     lty = 1:2,
+     lwd = 2,
+     xlab = "Survival Time (Days)",
+     ylab = "Survival Probability",
+     main = "KM Curves: Large vs Other")
+
+legend("topright",
+       legend = c("Other", "Large"),
+       col = c("blue", "red"),
+       lty = 1:2,
+       lwd = 2,
+       bty = "n")
+
+# Log-rank test
+logrank_a <- survdiff(Surv(st, d) ~ celltype1,
+                      data = vets)
+
+print(logrank_a)
+
+# P-value
+p_a <- pchisq(logrank_a$chisq,
+              df = 1,
+              lower.tail = FALSE)
+
+print(p_a)
+```
+
+#2.1.b
+```{r}
+# Kaplan-Meier estimates
+km_b <- survfit(Surv(st, d) ~ celltype4, data = vets)
+
+# KM plot
+plot(km_b,
+     col = c("red", "blue", "green4", "purple"),
+     lty = 1:4,
+     lwd = 2,
+     xlab = "Survival Time (Days)",
+     ylab = "Survival Probability",
+     main = "KM Curves by Cell Type")
+
+legend("topright",
+       legend = c("Large", "Adeno",
+                  "Small", "Squamous"),
+       col = c("red", "blue", "green4", "purple"),
+       lty = 1:4,
+       lwd = 2,
+       bty = "n")
+
+# Log-rank test
+logrank_b <- survdiff(Surv(st, d) ~ celltype4,
+                      data = vets)
+
+print(logrank_b)
+
+# P-value
+p_b <- pchisq(logrank_b$chisq,
+              df = 3,
+              lower.tail = FALSE)
+
+print(p_b)
+```
+
+#2.2.0 Data Preparation
+```{r}
+library(haven)
+library(survival)
+heroin <- read_dta("data/heroin.dta")
+```
+
+#2.2.1
+```{r}
+# Convert clinic to factor
+heroin$clinic <- factor(
+  heroin$clinic,
+  levels = c(1, 2),
+  labels = c("Clinic 1", "Clinic 2")
+)
+
+# Kaplan-Meier estimates
+km_a <- survfit(
+  Surv(time, status) ~ clinic,
+  data = heroin
+)
+
+# Display KM estimates
+summary(km_a)
+
+# Plot KM curves
+plot(
+  km_a,
+  col = c("blue", "red"),
+  lty = c(1, 2),
+  lwd = 2,
+  xlab = "Time in Treatment (Days)",
+  ylab = "Retention Probability",
+  main = "Kaplan-Meier Curves by Clinic",
+  mark.time = TRUE
+)
+
+legend(
+  "topright",
+  legend = c("Clinic 1", "Clinic 2"),
+  col = c("blue", "red"),
+  lty = c(1, 2),
+  lwd = 2,
+  bty = "n"
+)
+```
+
+#2.2.2
+```{r}
+# Log-rank test
+logrank <- survdiff(
+  Surv(time, status) ~ clinic,
+  data = heroin
+)
+
+print(logrank)
+
+# Calculate p-value
+p_logrank <- pchisq(
+  logrank$chisq,
+  df = 1,
+  lower.tail = FALSE
+)
+
+print(p_logrank)
+```
+
+```{r}
+# Peto-Peto weighted log-rank test
+wilcox_test <- survdiff(
+  Surv(time, status) ~ clinic,
+  data = heroin,
+  rho = 1
+)
+
+print(wilcox_test)
+
+p_wilcox <- pchisq(
+  wilcox_test$chisq,
+  df = 1,
+  lower.tail = FALSE
+)
+
+print(p_wilcox)
+```
+
+#2.2.3
+```{r}
+# Summary of dose
+summary(heroin$dose)
+
+# Histogram
+hist(
+  heroin$dose,
+  main = "Distribution of Methadone Dose",
+  xlab = "Methadone Dose (mg/day)",
+  col = "lightblue",
+  border = "white"
+)
+
+# Calculate median
+median_dose <- median(
+  heroin$dose,
+  na.rm = TRUE
+)
+
+print(median_dose)
+```
+
+```{r}
+# Create two dose categories
+heroin$dose_group <- ifelse(
+  heroin$dose <= median_dose,
+  "Low dose",
+  "High dose"
+)
+
+heroin$dose_group <- factor(
+  heroin$dose_group,
+  levels = c("Low dose", "High dose")
+)
+
+# Check group sizes
+table(heroin$dose_group)
+```
+
+```{r}
+# Kaplan-Meier estimates
+km_c <- survfit(
+  Surv(time, status) ~ dose_group,
+  data = heroin
+)
+
+# Plot KM curves
+plot(
+  km_c,
+  col = c("red", "blue"),
+  lty = c(1, 2),
+  lwd = 2,
+  xlab = "Time in Treatment (Days)",
+  ylab = "Retention Probability",
+  main = "Kaplan-Meier Curves by Methadone Dose",
+  mark.time = TRUE
+)
+
+legend(
+  "topright",
+  legend = c("Low dose", "High dose"),
+  col = c("red", "blue"),
+  lty = c(1, 2),
+  lwd = 2,
+  bty = "n"
+)
+```
+
+```{r}
+# Log-rank test for dose groups
+logrank_c <- survdiff(
+  Surv(time, status) ~ dose_group,
+  data = heroin
+)
+
+print(logrank_c)
+
+# Calculate p-value
+p_c <- pchisq(
+  logrank_c$chisq,
+  df = 1,
+  lower.tail = FALSE
+)
+
+cat("Log-rank p-value =", p_c, "\n")
+```
+
